@@ -1,0 +1,18 @@
+{
+  "package": "comex-control-skip-handoff",
+  "version": "1.0.0",
+  "generatedAt": "2026-08-31",
+  "repository": "https://github.com/henrryquegabriel-boop/comex-control-skip",
+  "branch": "main",
+  "attachmentsInOrder": [
+    "00_START_HERE.md",
+    "01_DOMAIN_CONTRACT.json",
+    "02_API_AND_ACCEPTANCE.md",
+    "dashboard-reference-dark.png",
+    "dashboard-reference-mobile.png",
+    "comex-control-logo.png"
+  ],
+  "entryPrompt": "Use os anexos como contrato. Importe o repositório indicado em 00_START_HERE.md, preserve a arquitetura existente, execute npm run verify e não publique nem conecte produção.",
+  "containsSecrets": false,
+  "containsOfficialRows": false
+}

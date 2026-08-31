@@ -1,0 +1,63 @@
+{
+  "product": {
+    "name": "Comex Control",
+    "purpose": "Gestão multiempresa de importações marítimas com rastreamento híbrido e auditoria",
+    "locale": "pt-BR",
+    "timezone": "America/Sao_Paulo",
+    "defaultTheme": "dark"
+  },
+  "operationalStages": [
+    { "code": "IMPORT_STARTED", "order": 1, "label": "Início da importação", "color": "#38BDF8" },
+    { "code": "IN_TRANSIT", "order": 2, "label": "Em andamento", "color": "#8B5CF6" },
+    { "code": "PENDING", "order": 3, "label": "Pendente", "color": "#EC4899" },
+    { "code": "COMPLETED", "order": 4, "label": "Concluído", "color": "#14B8A6" }
+  ],
+  "customsChannels": [
+    { "code": "NOT_ASSIGNED", "label": "Não parametrizado", "color": "#64748B" },
+    { "code": "GREEN", "label": "Verde", "color": "#008000" },
+    { "code": "YELLOW", "label": "Amarelo", "color": "#FFFF00" },
+    { "code": "RED", "label": "Vermelho", "color": "#FF0000" },
+    { "code": "GRAY", "label": "Cinza", "color": "#808080" }
+  ],
+  "roles": {
+    "OWNER": ["IMPORTS_READ", "IMPORTS_WRITE", "TRACKING_REFRESH", "CUSTOMS_CHANNEL_WRITE", "AUDIT_READ", "REPORTS_GENERATE", "MEMBERS_MANAGE"],
+    "ADMIN": ["IMPORTS_READ", "IMPORTS_WRITE", "TRACKING_REFRESH", "CUSTOMS_CHANNEL_WRITE", "AUDIT_READ", "REPORTS_GENERATE", "MEMBERS_MANAGE_WITHOUT_OWNER"],
+    "AUDITOR": ["IMPORTS_READ", "AUDIT_READ", "REPORTS_GENERATE"],
+    "OPERATOR": ["IMPORTS_READ", "IMPORTS_WRITE", "TRACKING_REFRESH", "CUSTOMS_CHANNEL_WRITE"],
+    "VIEWER": ["IMPORTS_READ"]
+  },
+  "trackingPolicy": {
+    "mode": "HYBRID",
+    "standardLocalHours": [6, 18],
+    "criticalCadenceMinutes": 60,
+    "criticalConditions": ["stage=PENDING", "customsChannel=RED", "customsChannel=GRAY", "etaWithinHours<=72", "etaExpired"],
+    "manualCooldownSeconds": 60,
+    "completedAutomaticTracking": false
+  },
+  "carrierCodes": ["MAERSK", "CMA_CGM", "MSC", "HAPAG_LLOYD", "ONE", "EVERGREEN", "COSCO", "OOCL", "ZIM", "YANG_MING", "PIL", "HMM", "WAN_HAI", "OTHER"],
+  "mapRules": {
+    "engine": "MapLibre",
+    "marker": "ship",
+    "markerPrimaryColor": "operationalStage",
+    "markerSecondaryColor": "customsChannel",
+    "plotOnlyValidatedCoordinates": true,
+    "routeLine": "dashed",
+    "forbidInventedPositions": true
+  },
+  "authRules": {
+    "primary": "Supabase Google OAuth",
+    "additionalConfirmation": "code sent to the same normalized registered email",
+    "membershipRequired": true,
+    "autoMembership": false,
+    "serviceRoleInFrontend": false
+  },
+  "officialDatasetReconciliation": {
+    "fingerprintSha256": "B92C54D52C89E5E31BDA504C8BCF33A399054C0FF4E857902947F35A405795ED",
+    "canonicalImports": 74,
+    "sourceRows": 83,
+    "validDistinctContainers": 12,
+    "companies": { "QUALLY": 50, "PDA": 9, "SAFRA": 8, "GOGA": 7 }
+  },
+  "requiredRoutes": ["/dashboard", "/importacoes", "/relatorios", "/configuracoes"],
+  "prohibited": ["fake cargo records", "fake coordinates", "secrets in source", "production connection before QA", "cross-company access", "carrier success claims without validated API"]
+}

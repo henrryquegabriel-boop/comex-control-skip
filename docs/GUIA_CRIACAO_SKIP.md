@@ -88,7 +88,7 @@ Não implemente banco, autenticação, mapa nem APIs ainda. Ao terminar, apresen
 
 ## 2. Conectar o GitHub dedicado
 
-Segundo a FAQ consultada em 31/08/2026, exportação/conexão GitHub integra o plano Premium. O plano gratuito anuncia 15 créditos mensais e cada ação de build consome um crédito; este roteiro contém 14 builds planejados, mas correções e refinamentos provavelmente exigirão margem adicional. Use Chat/Ask para planejar antes de cada build e confirme preço e condições no painel antes de contratar.
+Em 31/08/2026, a página comercial atual do Skip exibia o plano Basic por R$ 249/mês no plano anual, com 1 licença e 800 créditos mensais; Starter por R$ 1.000/mês no plano anual, com 10 licenças e 800 créditos mensais; e VIP por R$ 10.000/mês no plano anual, licenças ilimitadas e 12.000 créditos mensais. A FAQ antiga ainda mostrava Free/Premium com outros valores, portanto está desatualizada em relação à página comercial. Confirme preço, cobrança anual, impostos e condições no checkout antes de contratar. Este roteiro evita builds desnecessários usando o starter pronto e o modo de planejamento antes de cada alteração.
 
 1. Abra **Código/GitHub** no Skip.
 2. Autorize somente o acesso necessário.

@@ -4,6 +4,10 @@ dist/
 .vite/
 coverage/
 reports/.build/
+reports/qa-*.png
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
 
 # Local configuration and secrets
 .env

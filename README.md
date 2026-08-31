@@ -24,9 +24,18 @@ Construir uma versão compatível com o ecossistema do Skip, preservando:
 
 ## Estado
 
-Repositório criado e isolado. A arquitetura-alvo e o plano incremental estão documentados; banco e aplicação de homologação ainda não foram criados.
+Starter Vite/React funcional criado e isolado, com shell visual, mapa, regras de domínio, migration Supabase/RLS, Edge Function do webhook n8n e testes. Não há dados oficiais, credenciais nem conexão de produção neste repositório.
+
+```powershell
+npm ci
+npm run verify
+npm run dev
+```
+
+Copie `.env.example` para `.env.local` somente quando houver um projeto Supabase de homologação. Nunca exponha `service_role` no frontend.
 
 ## Guia de construção
 
 - [Passo a passo operacional com 14 prompts](docs/GUIA_CRIACAO_SKIP.md)
 - [Relatório HTML portátil](reports/comex-control-skip-guia-criacao.html)
+- [Pacote compacto para anexar ao Skip](skip-package/00_START_HERE.md)
