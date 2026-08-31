@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
+  optimizeDeps: { exclude: ["maplibre-gl"] },
   server: { port: 3000, strictPort: true },
   preview: { port: 4173, strictPort: true },
   build: { chunkSizeWarningLimit: 1000 },
