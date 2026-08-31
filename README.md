@@ -24,4 +24,9 @@ Construir uma versão compatível com o ecossistema do Skip, preservando:
 
 ## Estado
 
-Repositório criado e isolado. A arquitetura Skip, o banco de homologação e o plano de migração ainda serão definidos antes de gerar código de produção.
+Repositório criado e isolado. A arquitetura-alvo e o plano incremental estão documentados; banco e aplicação de homologação ainda não foram criados.
+
+## Guia de construção
+
+- [Passo a passo operacional com 14 prompts](docs/GUIA_CRIACAO_SKIP.md)
+- [Relatório HTML portátil](reports/comex-control-skip-guia-criacao.html)

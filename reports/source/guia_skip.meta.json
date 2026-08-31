@@ -1,0 +1,15 @@
+{
+  "report_title": "Comex Control - Skip",
+  "report_subtitle": "Passo a passo para reconstrução funcional e visual com Supabase, n8n e Google Sheets",
+  "doc_type": "Guia de Implementação",
+  "report_ref": "CCS-GUIA-2026-001",
+  "emission_date": "31/08/2026",
+  "meta": [
+    {"k": "Projeto", "v": "Comex Control - Skip"},
+    {"k": "Plataforma", "v": "goskip.dev"},
+    {"k": "Método", "v": "Migração incremental"},
+    {"k": "Ambiente inicial", "v": "Homologação isolada"},
+    {"k": "Prompts", "v": "14 etapas de build"}
+  ],
+  "disclaimer": "Este guia organiza uma reconstrução equivalente no Skip, sem substituir automaticamente o sistema atual. A migração somente deve chegar à produção após validação de dados, RLS, autenticação, n8n, Google Sheets, APIs marítimas e rollback. Preços e recursos da plataforma devem ser confirmados antes de qualquer contratação."
+}

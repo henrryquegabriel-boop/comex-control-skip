@@ -3,6 +3,7 @@ node_modules/
 dist/
 .vite/
 coverage/
+reports/.build/
 
 # Local configuration and secrets
 .env

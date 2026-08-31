@@ -1,0 +1,147 @@
+<div class="tt-callout tt-ok">
+  <span class="tt-tag">Em resumo</span>
+  O Comex Control pode ser reconstruído no Skip com equivalência visual e funcional, mas não por importação direta nem por um único prompt. O caminho seguro é criar uma aplicação Vite/React no Skip, usar Supabase PostgreSQL/Auth/Edge Functions, conectar n8n e Google Sheets somente após o backend estar validado e manter a produção atual disponível até o corte.
+</div>
+
+<h2>1. O significado de uma versão idêntica</h2>
+<p>A meta é preservar a experiência do usuário, as regras de negócio, os dados oficiais e as integrações. A implementação interna muda para atender à stack suportada pelo Skip.</p>
+<table>
+  <thead><tr><th>Componente atual</th><th>Implementação no Skip</th><th>Critério de equivalência</th></tr></thead>
+  <tbody>
+    <tr><td>React + vinext</td><td>Vite, React, TypeScript e React Router</td><td>Mesmas telas, ações e estados</td></tr>
+    <tr><td>Cloudflare D1</td><td>Supabase PostgreSQL</td><td>Mesmas entidades, históricos e idempotência</td></tr>
+    <tr><td>Handlers na borda</td><td>Supabase Edge Functions</td><td>Contratos privados equivalentes</td></tr>
+    <tr><td>Login privado Sites</td><td>Supabase Auth, Google e OTP</td><td>Mesmo e-mail e membership obrigatórios</td></tr>
+    <tr><td>Sites</td><td>Skip Cloud</td><td>HTTPS, responsividade e disponibilidade homologadas</td></tr>
+    <tr><td>MapLibre/OpenFreeMap</td><td>MapLibre/OpenFreeMap</td><td>Somente posições comprovadas</td></tr>
+  </tbody>
+</table>
+
+<div class="tt-callout tt-alert">
+  <span class="tt-tag">Limite da plataforma</span>
+  A documentação do Skip informa que projetos existentes não são duplicados/importados e que a stack é Vite/React, não Next.js. Portanto, selecionar o repositório não converte o sistema atual: ele serve para versionar o código gerado no novo projeto.
+</div>
+
+<h2>2. Preparação</h2>
+<ol>
+  <li>Entre no Skip com a conta autorizada.</li>
+  <li>Crie o projeto <strong>Comex Control - Skip</strong>, sem publicar.</li>
+  <li>Conecte apenas o repositório privado <code>henrryquegabriel-boop/comex-control-skip</code>.</li>
+  <li>Crie um Supabase exclusivo de homologação.</li>
+  <li>Separe logo e capturas de tela sem dados sensíveis.</li>
+  <li>Mantenha n8n e sistema atual sem alterações durante a construção.</li>
+</ol>
+<p>Tokens, service role, credenciais de armadores, SMTP e planilha oficial não devem ser colados no chat. Use Secrets e credenciais protegidas.</p>
+
+<h2>3. Sequência de construção</h2>
+<p>A FAQ do Skip consultada em 31/08/2026 anuncia 15 créditos mensais no plano gratuito e um crédito por ação de build; conexão/exportação GitHub integra o Premium. O roteiro usa 14 builds planejados, mas correções exigem margem. Planeje gratuitamente no modo Chat/Ask e confirme preço e condições no painel antes de contratar.</p>
+<table>
+  <thead><tr><th>Build</th><th>Entrega</th><th>Bloqueio para avançar</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Shell, rotas, temas e estados</td><td>Desktop/mobile sem erro e sem dados falsos</td></tr>
+    <tr><td>2</td><td>Modelo PostgreSQL</td><td>Migrations reaplicáveis e company_id obrigatório</td></tr>
+    <tr><td>3</td><td>Papéis e RLS</td><td>Testes positivos e negativos dos cinco perfis</td></tr>
+    <tr><td>4</td><td>Google + OTP</td><td>Identidades iguais e membership ativo</td></tr>
+    <tr><td>5</td><td>Dashboard equivalente</td><td>Mapa, barras, temas e acessibilidade</td></tr>
+    <tr><td>6</td><td>CRUD de importações</td><td>Cadastro, edição, auditoria e outbox</td></tr>
+    <tr><td>7</td><td>Status e canais</td><td>Históricos independentes e progressão segura</td></tr>
+    <tr><td>8</td><td>Mapa operacional</td><td>Zero coordenadas fictícias</td></tr>
+    <tr><td>9</td><td>Relatórios</td><td>Permissões e CSV seguro</td></tr>
+    <tr><td>10</td><td>Edge Functions n8n</td><td>Tokens no backend e idempotência</td></tr>
+    <tr><td>11</td><td>Google Sheets</td><td>Conflitos e outbox protegidos</td></tr>
+    <tr><td>12</td><td>Fila híbrida</td><td>Horários, prioridade e backoff testados</td></tr>
+    <tr><td>13</td><td>Carga oficial</td><td>Fingerprint e contagens fechados</td></tr>
+    <tr><td>14</td><td>QA integral</td><td>Matriz de evidências sem falhas críticas</td></tr>
+  </tbody>
+</table>
+
+<h2>4. Banco, empresas e permissões</h2>
+<p>O modelo precisa preservar as entidades operacionais, históricas e de integração: empresas, memberships, perfis, importações, detalhes, contêineres, vínculos, posições, históricos de status/canal, transportadoras, recibos, fila híbrida, erros, auditoria, verificações de identidade, linhas oficiais, opções, lotes e outbox.</p>
+<table>
+  <thead><tr><th>Papel</th><th>Grava importação</th><th>Relatórios/auditoria</th><th>Gerencia usuários</th></tr></thead>
+  <tbody>
+    <tr><td>OWNER</td><td>Sim</td><td>Sim</td><td>Sim, inclusive proprietários</td></tr>
+    <tr><td>ADMIN</td><td>Sim</td><td>Sim</td><td>Sim, exceto proprietários</td></tr>
+    <tr><td>AUDITOR</td><td>Não</td><td>Sim</td><td>Não</td></tr>
+    <tr><td>OPERATOR</td><td>Sim</td><td>Não</td><td>Não</td></tr>
+    <tr><td>VIEWER</td><td>Não</td><td>Não</td><td>Não</td></tr>
+  </tbody>
+</table>
+<div class="tt-example">
+  <span class="tt-tag">Exemplo validado</span>
+  Um proprietário vinculado à QUALLY pode editar processos dessa empresa. Se não possui membership na SAFRA, nenhuma consulta direta ou tela pode revelar os registros da SAFRA. Um auditor pode exportar o relatório autorizado, mas a mesma sessão recebe bloqueio ao tentar gravar.
+</div>
+
+<h2>5. Interface e regras visuais</h2>
+<p>O modo escuro abre como padrão, com modo claro e quatro paletas opcionais. A barra esquerda é recolhível, o mapa domina a área central e a seleção abre os detalhes. As cores de status não se confundem com as cores regulatórias dos canais.</p>
+<table>
+  <thead><tr><th>Status operacional</th><th>Cor</th><th>Canal</th><th>Cor regulatória</th></tr></thead>
+  <tbody>
+    <tr><td>Início</td><td>#38BDF8</td><td>Não parametrizado</td><td>#64748B</td></tr>
+    <tr><td>Em andamento</td><td>#8B5CF6</td><td>Verde</td><td>#008000</td></tr>
+    <tr><td>Pendente</td><td>#EC4899</td><td>Amarelo</td><td>#FFFF00</td></tr>
+    <tr><td>Concluído</td><td>#14B8A6</td><td>Vermelho/Cinza</td><td>#FF0000 / #808080</td></tr>
+  </tbody>
+</table>
+<p>MapLibre deve ser testado no build do Skip. Um cadastro sem evento geográfico permanece nas listas, mas não recebe um ponto. A rota tracejada requer duas ou mais posições reportadas. AIS representa o navio associado, não GPS do contêiner.</p>
+
+<h2>6. Dados oficiais</h2>
+<p>A importação deve ocorrer por função administrativa transacional e idempotente, nunca por digitação manual de toda a planilha. O lote só é aceito quando o fingerprint e as contagens fecham.</p>
+<table>
+  <thead><tr><th>Controle</th><th>Resultado esperado</th></tr></thead>
+  <tbody>
+    <tr><td>Processos canônicos</td><td class="tt-num">74</td></tr>
+    <tr><td>Linhas-fonte</td><td class="tt-num">83</td></tr>
+    <tr><td>QUALLY</td><td class="tt-num">50</td></tr>
+    <tr><td>PDA</td><td class="tt-num">9</td></tr>
+    <tr><td>SAFRA</td><td class="tt-num">8</td></tr>
+    <tr><td>GOGA</td><td class="tt-num">7</td></tr>
+    <tr><td>Contêineres ISO válidos</td><td class="tt-num">12</td></tr>
+    <tr><td>Coordenadas inventadas</td><td class="tt-num">0</td></tr>
+  </tbody>
+</table>
+
+<h2>7. Integrações e política híbrida</h2>
+<p>O navegador nunca recebe segredos. Edge Functions autenticam usuários e n8n, validam empresa, idempotência, ordem dos eventos e rate limit. A planilha usa <code>_SYNC_ID</code> e <code>_VERSAO</code>; conflitos retornam 409 e não são mesclados silenciosamente.</p>
+<div class="tt-example">
+  <span class="tt-tag">Bancada numérica</span>
+  Em 31 dias, 100 referências integralmente horárias geram 74.400 elegibilidades. Com 20 críticas a cada hora e 80 normais às 06h/18h, o híbrido gera 19.840: redução de 73,33%. Processos concluídos não entram na fila.
+</div>
+<p>Falhas aplicam recuos de 1, 2, 4, 8 e 12 horas. Pesquisa manual respeita 60 segundos. Pendente, canal vermelho/cinza, ETA vencida ou em até 72 horas tornam o processo crítico.</p>
+
+<h2>8. Prompt inicial recomendado</h2>
+<div class="tt-example">
+  <span class="tt-tag">Cole no primeiro build</span>
+  <p>Crie a fundação de uma aplicação web chamada Comex Control. Use Vite, React, TypeScript, React Router, Tailwind e componentes acessíveis. Não use Next.js, dados fictícios apresentados como reais ou segredos no frontend.</p>
+  <p>Crie somente shell, rotas protegidas placeholder, cabeçalho, empresa ativa, conta, navegação, modo escuro padrão, modo claro e estados de loading, vazio, erro e sem permissão. Não implemente banco, autenticação, mapa nem APIs nesta etapa. Ao terminar, liste arquivos e critérios atendidos.</p>
+</div>
+<p>Os outros treze prompts completos, com critérios de aceite, estão no arquivo operacional <code>docs/GUIA_CRIACAO_SKIP.md</code> do repositório.</p>
+
+<h2>9. QA e corte de produção</h2>
+<ol>
+  <li>Teste cada papel e chamadas diretas.</li>
+  <li>Valide CRUD, concorrência, status, canais e auditoria.</li>
+  <li>Comprove que nenhum cadastro sem posição aparece no mapa.</li>
+  <li>Repita eventos e confirme idempotência.</li>
+  <li>Teste entrega parcial, conflito Sheets e confirmação antiga da outbox.</li>
+  <li>Homologue ao menos um armador com referência real autorizada.</li>
+  <li>Publique primeiro em subdomínio de homologação.</li>
+  <li>Compare bases, mantenha rollback e só depois altere domínio e n8n.</li>
+</ol>
+<div class="tt-callout tt-alert">
+  <span class="tt-tag">Não declarar antes da hora</span>
+  Interface semelhante não significa sistema equivalente. A migração somente termina quando RLS, dados, integrações, rastreamento real, relatórios, segurança e rollback estiverem comprovados.
+</div>
+
+<div class="tt-legal">
+  <h4>Fontes oficiais e técnicas</h4>
+  <ul>
+    <li><a href="https://docs.goskip.dev/introduction/getting-started/">Skip — primeiros passos</a></li>
+    <li><a href="https://docs.goskip.dev/introduction/faq/">Skip — stack, GitHub, Supabase, planos e limites</a></li>
+    <li><a href="https://docs.goskip.dev/integrations/skip-cloud/oauth/">Skip — login social</a></li>
+    <li><a href="https://docs.goskip.dev/deployment/publishing/">Skip — publicação</a></li>
+    <li><a href="https://docs.goskip.dev/video-lessons/courses/">Skip — banco, papéis, RLS e Edge Functions</a></li>
+    <li><a href="https://supabase.com/docs">Supabase — documentação</a></li>
+    <li><a href="https://dcsa.org/standards/track-and-trace/standard-documentation-track-and-trace">DCSA Track &amp; Trace</a></li>
+  </ul>
+</div>
