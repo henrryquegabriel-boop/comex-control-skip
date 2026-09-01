@@ -1,56 +1,107 @@
-import { useEffect, useRef, useState } from "react";
-import type { Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
-import { AlertTriangle, LoaderCircle } from "lucide-react";
+import { useEffect, useRef, useState } from 'react'
+import 'maplibre-gl/dist/maplibre-gl.css'
 
-type MapSurfaceProps = { theme: "dark" | "light" };
+export type MapLayerStyle = 'positron' | 'bright' | 'dark' | 'liberty'
 
-export function MapSurface({ theme }: MapSurfaceProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<MapLibreMap | null>(null);
-  const [state, setState] = useState<"loading" | "ready" | "error">("ready");
+export interface MapFilters {
+  stage?: string | 'ALL'
+  channel?: string | 'ALL'
+  search?: string
+}
+interface MapSurfaceProps {
+  mapStyle?: MapLayerStyle
+  showGrid?: boolean
+  showLegends?: boolean
+  filters?: MapFilters
+  onRefresh?: () => void
+  lastRefreshedAt?: Date | null
+  syncStatusMessage?: string | null
+}
+
+function getMapStyleUrl(layer: MapLayerStyle): string {
+  switch (layer) {
+    case 'dark':
+      return 'https://tiles.openfreemap.org/styles/dark'
+    case 'bright':
+      return 'https://tiles.openfreemap.org/styles/bright'
+    case 'liberty':
+      return 'https://tiles.openfreemap.org/styles/liberty'
+    case 'positron':
+    default:
+      return 'https://tiles.openfreemap.org/styles/positron'
+  }
+}
+
+export function MapSurface({
+  mapStyle = 'positron',
+  showGrid = true,
+  filters,
+  lastRefreshedAt,
+  syncStatusMessage,
+}: MapSurfaceProps) {
+  const mapContainer = useRef<HTMLDivElement>(null)
+  const mapInstance = useRef<import('maplibre-gl').Map | null>(null)
+  const [mapUnavailable, setMapUnavailable] = useState(false)
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    let cancelled = false;
-    const configuredStyle = theme === "dark" ? import.meta.env.VITE_MAP_STYLE_DARK : import.meta.env.VITE_MAP_STYLE_LIGHT;
-    const rasterStyle: StyleSpecification = {
-      version: 8,
-      sources: {
-        openstreetmap: {
-          type: "raster",
-          tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-          tileSize: 256,
-          attribution: "© OpenStreetMap contributors",
-        },
-      },
-      layers: [{ id: "openstreetmap", type: "raster", source: "openstreetmap" }],
-    };
-    const style = configuredStyle || rasterStyle;
-    const timeout = window.setTimeout(() => { if (!cancelled) setState("error"); }, 12_000);
+    if (!mapContainer.current) return
+    let disposed = false
 
-    void import("maplibre-gl").then(({ Map, NavigationControl }) => {
-      if (cancelled || !containerRef.current) return;
-      const map = new Map({
-        container: containerRef.current,
-        style,
-        center: [-24, 2],
-        zoom: 1.55,
-        minZoom: 1,
-        attributionControl: { compact: true },
-      });
-      map.addControl(new NavigationControl({ showCompass: true }), "bottom-right");
-      map.once("style.load", () => { window.clearTimeout(timeout); if (!cancelled) setState("ready"); });
-      mapRef.current = map;
-    }).catch(() => { if (!cancelled) setState("error"); });
-    return () => { cancelled = true; window.clearTimeout(timeout); mapRef.current?.remove(); mapRef.current = null; };
-  }, [theme]);
+    import('maplibre-gl')
+      .then((maplibregl) => {
+        if (disposed || !mapContainer.current) return
+        const map = new maplibregl.Map({
+          container: mapContainer.current,
+          style: getMapStyleUrl(mapStyle),
+          center: [-22, 9],
+          zoom: 1.4,
+          attributionControl: false,
+          interactive: true,
+        })
+        mapInstance.current = map
+        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
+        map.on('error', () => setMapUnavailable(true))
+      })
+      .catch(() => setMapUnavailable(true))
+
+    return () => {
+      disposed = true
+      mapInstance.current?.remove()
+      mapInstance.current = null
+    }
+  }, [mapStyle])
+
+  const hasActiveFilters = Boolean(
+    (filters?.stage && filters.stage !== 'ALL') ||
+    (filters?.channel && filters.channel !== 'ALL') ||
+    (filters?.search && filters.search.trim().length > 0),
+  )
 
   return (
-    <div className="map-canvas" aria-label="Mapa mundial das importações">
-      <div ref={containerRef} className="maplibre-host" />
-      {state === "loading" && <div className="map-loading"><LoaderCircle className="spinning" size={15} /> Carregando mapa seguro</div>}
-      {state === "error" && <div className="map-empty-state"><AlertTriangle size={18} /><strong>Mapa indisponível</strong><span>Verifique a rede ou configure outro provedor de tiles.</span></div>}
-      {state === "ready" && <div className="map-empty-state blueprint-empty"><strong>Nenhuma posição comprovada</strong><span>Os navios aparecerão somente após o rastreamento validar coordenadas e evidências.</span></div>}
+    <div
+      className={`map-surface ${showGrid ? 'has-grid' : 'no-grid'}`}
+      aria-label="Mapa operacional sem posições validadas"
+    >
+      <div ref={mapContainer} className="maplibre-host" />
+      {mapUnavailable && <div className="map-fallback" aria-hidden="true" />}
+      <div className="map-empty" role="status">
+        <strong>Nenhuma posição comprovada</strong>
+        <span>
+          {hasActiveFilters
+            ? 'Filtros aplicados. Os navios aparecerão somente após o rastreamento validar coordenadas e evidências.'
+            : 'Os navios aparecerão somente após o rastreamento validar coordenadas e evidências.'}
+        </span>
+        {lastRefreshedAt && (
+          <small className="last-sync-tag" aria-live="polite">
+            Última verificação: {lastRefreshedAt.toLocaleTimeString('pt-BR')}
+          </small>
+        )}
+        {syncStatusMessage && (
+          <small className="sync-status-notice" aria-live="polite">
+            {syncStatusMessage}
+          </small>
+        )}
+      </div>
     </div>
-  );
+  )
 }

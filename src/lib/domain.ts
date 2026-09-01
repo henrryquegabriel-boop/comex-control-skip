@@ -5,6 +5,13 @@ export const IMPORT_STAGES = {
   COMPLETED: { label: "Concluído", color: "#14B8A6", order: 4 },
 } as const;
 
+export const OPERATIONAL_STAGES = [
+  { code: "IMPORT_STARTED", ...IMPORT_STAGES.IMPORT_STARTED },
+  { code: "IN_TRANSIT", ...IMPORT_STAGES.IN_TRANSIT },
+  { code: "PENDING", ...IMPORT_STAGES.PENDING },
+  { code: "COMPLETED", ...IMPORT_STAGES.COMPLETED },
+] as const;
+
 export const CUSTOMS_CHANNELS = {
   NOT_ASSIGNED: { label: "Não parametrizado", color: "#64748B" },
   GREEN: { label: "Verde", color: "#008000" },
@@ -13,9 +20,34 @@ export const CUSTOMS_CHANNELS = {
   GRAY: { label: "Cinza", color: "#808080" },
 } as const;
 
+export const CUSTOMS_CHANNEL_OPTIONS = [
+  { code: "NOT_ASSIGNED", ...CUSTOMS_CHANNELS.NOT_ASSIGNED },
+  { code: "GREEN", ...CUSTOMS_CHANNELS.GREEN },
+  { code: "YELLOW", ...CUSTOMS_CHANNELS.YELLOW },
+  { code: "RED", ...CUSTOMS_CHANNELS.RED },
+  { code: "GRAY", ...CUSTOMS_CHANNELS.GRAY },
+] as const;
+
+export const PRODUCT = {
+  name: "Comex Control",
+  purpose: "Gestão multiempresa de importações marítimas com rastreamento híbrido e auditoria",
+  locale: "pt-BR",
+  timezone: "America/Sao_Paulo",
+} as const;
+
+export const COMPANIES = ["QUALLY", "PDA", "SAFRA", "GOGA"] as const;
+
+export interface UserSessionProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: "OWNER" | "ADMIN" | "OPERATOR" | "AUDITOR" | "VIEWER";
+  company: (typeof COMPANIES)[number];
+}
+
 export const ROLE_PERMISSIONS = {
   OWNER: ["IMPORTS_READ", "IMPORTS_WRITE", "TRACKING_REFRESH", "CUSTOMS_CHANNEL_WRITE", "AUDIT_READ", "REPORTS_GENERATE", "MEMBERS_MANAGE"],
-  ADMIN: ["IMPORTS_READ", "IMPORTS_WRITE", "TRACKING_REFRESH", "CUSTOMS_CHANNEL_WRITE", "AUDIT_READ", "REPORTS_GENERATE", "MEMBERS_MANAGE"],
+  ADMIN: ["IMPORTS_READ", "IMPORTS_WRITE", "TRACKING_REFRESH", "CUSTOMS_CHANNEL_WRITE", "AUDIT_READ", "REPORTS_GENERATE", "MEMBERS_MANAGE_WITHOUT_OWNER"],
   AUDITOR: ["IMPORTS_READ", "AUDIT_READ", "REPORTS_GENERATE"],
   OPERATOR: ["IMPORTS_READ", "IMPORTS_WRITE", "TRACKING_REFRESH", "CUSTOMS_CHANNEL_WRITE"],
   VIEWER: ["IMPORTS_READ"],

@@ -1,6 +1,8 @@
 export const normalizeContainerNumber = (value: string) =>
   value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
 
+export const normalizeContainerCode = normalizeContainerNumber;
+
 export function isIso6346(value: string) {
   const normalized = normalizeContainerNumber(value);
   if (!/^[A-Z]{3}[UJZ]\d{7}$/.test(normalized)) return false;
@@ -17,3 +19,5 @@ export function isIso6346(value: string) {
   const remainder = sum % 11;
   return (remainder === 10 ? 0 : remainder) === Number(normalized[10]);
 }
+
+export const isValidIso6346 = isIso6346;
