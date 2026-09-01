@@ -597,6 +597,23 @@ create policy tracking_receipts_privileged_select on public.tracking_receipts fo
 drop policy if exists sheet_outbox_privileged_select on public.sheet_sync_outbox;
 create policy sheet_outbox_privileged_select on public.sheet_sync_outbox for select to authenticated using (public.has_company_role(company_id,array['OWNER','ADMIN','AUDITOR']::public.company_role[]));
 
+-- A Data API permanece fechada para anon. Como a exposição automática de tabelas
+-- fica desativada no projeto, os privilégios do papel autenticado precisam ser
+-- declarados explicitamente; o RLS continua sendo a autorização por linha.
+revoke all on all tables in schema public from anon;
+grant usage on schema public to authenticated;
+grant select on all tables in schema public to authenticated;
+grant insert, update, delete on table
+  public.user_profiles,
+  public.company_memberships,
+  public.imports,
+  public.import_details,
+  public.containers,
+  public.import_containers,
+  public.import_customs_channel_history,
+  public.import_reference_options
+to authenticated;
+
 do $$ declare t text; begin
   foreach t in array array['companies','user_profiles','company_memberships','identity_verifications','imports','import_details','containers','tracking_dispatches'] loop
     execute format('drop trigger if exists %I_touch_updated_at on public.%I',t,t);

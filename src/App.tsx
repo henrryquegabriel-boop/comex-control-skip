@@ -43,6 +43,7 @@ import { hasGoogleOAuthConfig, hasSupabaseConfig, supabase } from './lib/supabas
 type Theme = 'dark' | 'light' | 'violet' | 'ocean' | 'graphite' | 'amber'
 type CompanyName = string
 type AuthUser = UserSessionProfile
+type CompanyMembershipOption = Pick<AuthUser, 'company' | 'companyId' | 'role'>
 
 const NAVIGATION = [
   { to: '/dashboard', label: 'Mapa operacional', icon: Anchor },
@@ -88,6 +89,7 @@ function App() {
   // Sessão de usuário autenticado: sem sessão por padrão (sem empresa ativa)
   const [user, setUser] = useState<AuthUser | null>(null)
   const [company, setCompany] = useState<CompanyName | null>(null)
+  const [companyMemberships, setCompanyMemberships] = useState<CompanyMembershipOption[]>([])
 
   const [theme, setTheme] = useState<Theme>('dark')
   const [blueprint, setBlueprint] = useState(false)
@@ -124,24 +126,32 @@ function App() {
           .from('company_memberships')
           .select('role, company_id, companies(code)')
           .eq('user_id', userId)
-          .eq('active', true)
-          .limit(1)
-          .maybeSingle(),
+          .eq('active', true),
       ])
 
       if (!active) return
       const profile = profileResult.data
-      const membership = membershipResult.data
-      const relatedCompany = membership
-        ? Array.isArray(membership.companies)
-          ? membership.companies[0]
-          : membership.companies
-        : null
-      const companyCode = relatedCompany?.code
+      const memberships = (membershipResult.data ?? [])
+        .flatMap((membership) => {
+          const relatedCompany = Array.isArray(membership.companies)
+            ? membership.companies[0]
+            : membership.companies
+          if (!relatedCompany?.code) return []
+          return [
+            {
+              company: relatedCompany.code,
+              companyId: membership.company_id,
+              role: membership.role,
+            } as CompanyMembershipOption,
+          ]
+        })
+        .sort((left, right) => left.company.localeCompare(right.company, 'pt-BR'))
 
-      if (profileResult.error || membershipResult.error || !membership || !companyCode) {
+      const activeMembership = memberships[0]
+      if (profileResult.error || membershipResult.error || !activeMembership) {
         setUser(null)
         setCompany(null)
+        setCompanyMemberships([])
         return
       }
 
@@ -149,12 +159,13 @@ function App() {
         id: userId,
         name: profile?.display_name || sessionEmail?.split('@')[0] || 'Usuário',
         email: profile?.email || sessionEmail || '',
-        role: membership.role,
-        company: companyCode,
-        companyId: membership.company_id,
+        role: activeMembership.role,
+        company: activeMembership.company,
+        companyId: activeMembership.companyId,
       }
       setUser(loadedUser)
-      setCompany(companyCode)
+      setCompany(activeMembership.company)
+      setCompanyMemberships(memberships)
       setAuthModalOpen(false)
     }
 
@@ -173,6 +184,7 @@ function App() {
       } else {
         setUser(null)
         setCompany(null)
+        setCompanyMemberships([])
       }
     })
 
@@ -186,6 +198,9 @@ function App() {
   const handleLogin = (newUser: AuthUser) => {
     setUser(newUser)
     setCompany(newUser.company)
+    setCompanyMemberships([
+      { company: newUser.company, companyId: newUser.companyId, role: newUser.role },
+    ])
     setAuthModalOpen(false)
   }
 
@@ -199,16 +214,22 @@ function App() {
     }
     setUser(null)
     setCompany(null)
+    setCompanyMemberships([])
     setUserMenuOpen(false)
   }
 
-  // A empresa é resolvida exclusivamente via profile/company_memberships do backend.
-  // Usuário nunca escolhe empresa avulsa pela UI.
+  // O usuário só alterna entre vínculos retornados pelo backend; nunca informa empresa avulsa.
   const handleCompanyChange = (newComp: CompanyName | '') => {
     if (!user) return
-    if (newComp === user.company) {
-      setCompany(newComp)
-    }
+    const membership = companyMemberships.find((item) => item.company === newComp)
+    if (!membership) return
+    setCompany(membership.company)
+    setUser({
+      ...user,
+      company: membership.company,
+      companyId: membership.companyId,
+      role: membership.role,
+    })
   }
 
   function submitSearch(event: FormEvent) {
@@ -231,7 +252,7 @@ function App() {
           title={
             !user
               ? 'Nenhuma empresa vinculada — necessária sessão autenticada'
-              : `Empresa vinculada: ${company} (definida por perfis e RLS)`
+              : `${companyMemberships.length} empresa(s) autorizada(s) pelo backend e RLS`
           }
           role="status"
           aria-label={
@@ -240,9 +261,25 @@ function App() {
         >
           <Building2 size={17} />
           <span>
-            <small>Empresa vinculada</small>
+            <small>{companyMemberships.length > 1 ? 'Empresa ativa' : 'Empresa vinculada'}</small>
             <b>{company ? company : 'Nenhuma (sem sessão)'}</b>
           </span>
+          {user && companyMemberships.length > 1 && (
+            <>
+              <ChevronDown size={14} aria-hidden="true" />
+              <select
+                aria-label="Selecionar empresa ativa"
+                value={company ?? ''}
+                onChange={(event) => handleCompanyChange(event.target.value)}
+              >
+                {companyMemberships.map((membership) => (
+                  <option key={membership.companyId} value={membership.company}>
+                    {membership.company}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
         </div>
 
         <form className="global-search" onSubmit={submitSearch}>
@@ -391,6 +428,20 @@ function App() {
               <span>
                 <CircleUserRound size={14} /> {user.name} (<b>{company}</b>)
               </span>
+              {companyMemberships.length > 1 && (
+                <select
+                  className="mobile-company-select"
+                  aria-label="Selecionar empresa ativa no menu"
+                  value={company ?? ''}
+                  onChange={(event) => handleCompanyChange(event.target.value)}
+                >
+                  {companyMemberships.map((membership) => (
+                    <option key={membership.companyId} value={membership.company}>
+                      {membership.company}
+                    </option>
+                  ))}
+                </select>
+              )}
               <button onClick={handleLogout} className="mobile-logout-btn">
                 <LogOut size={13} /> Sair
               </button>
@@ -453,7 +504,10 @@ function App() {
       </main>
 
       <footer>
-        <ShieldCheck size={14} /> Starter local · aguardando Supabase e dados oficiais{' '}
+        <ShieldCheck size={14} />{' '}
+        {hasSupabaseConfig
+          ? 'Supabase HML conectado · aguardando dados oficiais'
+          : 'Starter local · Supabase não configurado'}{' '}
         <span>·</span>{' '}
         {company ? `Empresa ativa: ${company}` : 'Nenhuma empresa ativa (sem sessão)'}
       </footer>
@@ -1216,8 +1270,8 @@ function NewImportModal({
         <p className="eyebrow">Cadastro controlado</p>
         <h2 id="new-import-title">Nova importação</h2>
         <p>
-          Empresa vinculada: <b>{company}</b> (operador: {user.name}). Nenhum registro será criado
-          sem backend homologado e RLS ativo.
+          Empresa vinculada: <b>{company}</b> (operador: {user.name}). A gravação ocorre diretamente
+          no Supabase HML e é protegida pelo RLS da empresa ativa.
         </p>
         <form onSubmit={submit}>
           <label>

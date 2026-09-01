@@ -25,6 +25,8 @@ test("migration contém modelo oficial, segregação e RLS", () => {
   assert.match(sql, /LAST_OWNER_REQUIRED/);
   assert.match(sql, /foreign key\(company_id,container_id\)/);
   assert.match(sql, /enqueue_import_sheet_sync/);
+  assert.match(sql, /revoke all on all tables in schema public from anon/);
+  assert.match(sql, /grant select on all tables in schema public to authenticated/);
   assert.doesNotMatch(sql, /using\s*\(true\).*imports/i);
 });
 
@@ -59,6 +61,14 @@ test("starter expõe as quatro rotas obrigatórias e não inclui dados de demons
   assert.match(app, /Nenhuma empresa vinculada/);
   assert.match(app, /Nenhuma posição comprovada/);
   assert.doesNotMatch(app, /HLCU8042211|SAFRA|QUALLY/);
+});
+
+test("sessão multiempresa permite alternar apenas entre vínculos retornados pelo RLS", () => {
+  const app = read("../src/App.tsx");
+  assert.match(app, /from\('company_memberships'\)/);
+  assert.match(app, /Selecionar empresa ativa/);
+  assert.match(app, /companyMemberships\.find/);
+  assert.doesNotMatch(app, /\.limit\(1\)\s*\.maybeSingle\(\)/);
 });
 
 test("material financeiro não mantém o preço histórico obsoleto como recomendação", () => {

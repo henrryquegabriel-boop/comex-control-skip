@@ -219,6 +219,11 @@ select {
 .company-picker select:disabled {
   cursor: not-allowed;
 }
+.company-picker select option,
+.mobile-company-select option {
+  color: #111827;
+  background: #ffffff;
+}
 .company-picker > svg:last-child {
   margin-left: auto;
   color: var(--muted);
@@ -1402,6 +1407,14 @@ footer span {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+  }
+  .mobile-company-select {
+    min-width: 92px;
+    padding: 5px 8px;
+    border: 1px solid var(--line-strong);
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
   }
   .mobile-login-btn,
   .mobile-logout-btn {
