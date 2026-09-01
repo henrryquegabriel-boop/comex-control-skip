@@ -38,6 +38,21 @@ test("webhook exige assinatura, idempotência e dados geográficos válidos", ()
   assert.doesNotMatch(source, /access-control-allow-origin/i);
 });
 
+test("cadastro e atualização manual usam contratos reais do backend", () => {
+  const sql = read("../supabase/migrations/202608310001_core.sql");
+  const app = read("../src/App.tsx");
+  const relay = read("../supabase/functions/tracking-refresh/index.ts");
+
+  assert.match(sql, /create_import_with_container/);
+  assert.match(sql, /is_valid_iso6346/);
+  assert.match(app, /rpc\('create_import_with_container'/);
+  assert.match(app, /functions\.invoke\('tracking-refresh'/);
+  assert.doesNotMatch(app, /from\('profiles'\)|from\('tracking_events'\)|container_code:/);
+  assert.match(relay, /N8N_MANUAL_WEBHOOK_URL/);
+  assert.match(relay, /TRACKING_REFRESH_FORBIDDEN/);
+  assert.match(relay, /userClient\.auth\.getUser/);
+});
+
 test("starter expõe as quatro rotas obrigatórias e não inclui dados de demonstração", () => {
   const app = `${read("../src/App.tsx")}\n${read("../src/components/MapSurface.tsx")}`;
   for (const route of ["/dashboard", "/importacoes", "/relatorios", "/configuracoes"]) assert.match(app, new RegExp(route));

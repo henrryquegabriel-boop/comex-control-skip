@@ -42,7 +42,8 @@ export interface UserSessionProfile {
   name: string;
   email: string;
   role: "OWNER" | "ADMIN" | "OPERATOR" | "AUDITOR" | "VIEWER";
-  company: (typeof COMPANIES)[number];
+  company: string;
+  companyId: string;
 }
 
 export const ROLE_PERMISSIONS = {

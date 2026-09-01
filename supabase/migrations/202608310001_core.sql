@@ -448,6 +448,76 @@ returns boolean language sql stable security definer set search_path = public as
       and (m.user_id = auth.uid() or lower(m.user_email::text) = lower(coalesce(auth.jwt()->>'email',''))));
 $$;
 
+create or replace function public.is_valid_iso6346(p_value text)
+returns boolean language plpgsql immutable strict set search_path = public as $$
+declare
+  normalized text := upper(regexp_replace(p_value,'[^A-Za-z0-9]','','g'));
+  character text;
+  base integer;
+  numeric_value integer;
+  total bigint := 0;
+  remainder integer;
+begin
+  if normalized !~ '^[A-Z]{3}[UJZ][0-9]{7}$' then return false; end if;
+  for idx in 1..10 loop
+    character := substr(normalized,idx,1);
+    if character ~ '^[0-9]$' then
+      numeric_value := character::integer;
+    else
+      base := ascii(character)-55;
+      numeric_value := base + floor((base-1)/10.0)::integer;
+    end if;
+    total := total + numeric_value * power(2,idx-1)::bigint;
+  end loop;
+  remainder := mod(total,11);
+  if remainder=10 then remainder:=0; end if;
+  return remainder = substr(normalized,11,1)::integer;
+end $$;
+
+create or replace function public.create_import_with_container(
+  p_company_id uuid,
+  p_internal_reference text,
+  p_importer_name text,
+  p_container_number text
+)
+returns uuid language plpgsql security definer set search_path = public as $$
+declare
+  normalized_container text := upper(regexp_replace(coalesce(p_container_number,''),'[^A-Za-z0-9]','','g'));
+  normalized_reference text := nullif(btrim(p_internal_reference),'');
+  normalized_importer text := nullif(btrim(p_importer_name),'');
+  created_import_id uuid;
+  linked_container_id uuid;
+begin
+  if auth.uid() is null then raise exception 'AUTHENTICATION_REQUIRED' using errcode='42501'; end if;
+  if not public.has_company_role(p_company_id,array['OWNER','ADMIN','OPERATOR']::public.company_role[]) then
+    raise exception 'COMPANY_WRITE_FORBIDDEN' using errcode='42501';
+  end if;
+  if normalized_reference is null or normalized_importer is null then
+    raise exception 'REFERENCE_AND_IMPORTER_REQUIRED' using errcode='22023';
+  end if;
+  if not public.is_valid_iso6346(normalized_container) then
+    raise exception 'INVALID_ISO_6346' using errcode='22023';
+  end if;
+
+  insert into public.imports(company_id,internal_reference,importer_name,source,created_by,updated_by)
+  values(p_company_id,normalized_reference,normalized_importer,'APP',auth.uid(),auth.uid())
+  returning id into created_import_id;
+
+  insert into public.containers(company_id,container_number,stage,status_label,status_color,status_raw,last_check_source)
+  values(p_company_id,normalized_container,'IMPORT_STARTED','Início da importação','#38BDF8','REGISTERED','manual')
+  on conflict(company_id,container_number) do update set updated_at=now()
+  returning id into linked_container_id;
+
+  insert into public.import_containers(company_id,import_id,container_id,source)
+  values(p_company_id,created_import_id,linked_container_id,'APP')
+  on conflict do nothing;
+
+  return created_import_id;
+end $$;
+
+revoke all on function public.create_import_with_container(uuid,text,text,text) from public;
+grant execute on function public.create_import_with_container(uuid,text,text,text) to authenticated;
+
 create or replace function public.guard_membership_owner()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare target_company uuid; owner_count integer;

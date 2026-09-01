@@ -31,7 +31,6 @@ import {
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { MapFilters, MapLayerStyle, MapSurface } from './components/MapSurface'
 import {
-  COMPANIES,
   CUSTOMS_CHANNEL_OPTIONS,
   OPERATIONAL_STAGES,
   PRODUCT,
@@ -42,7 +41,7 @@ import { isValidIso6346, normalizeContainerCode } from './lib/iso6346'
 import { hasGoogleOAuthConfig, hasSupabaseConfig, supabase } from './lib/supabase'
 
 type Theme = 'dark' | 'light' | 'violet' | 'ocean' | 'graphite' | 'amber'
-type CompanyName = (typeof COMPANIES)[number]
+type CompanyName = string
 type AuthUser = UserSessionProfile
 
 const NAVIGATION = [
@@ -112,47 +111,73 @@ function App() {
   useEffect(() => {
     if (!supabase) return
     const client = supabase
+    let active = true
+
+    async function loadSessionUser(userId: string, sessionEmail?: string) {
+      const [profileResult, membershipResult] = await Promise.all([
+        client
+          .from('user_profiles')
+          .select('user_id, display_name, email')
+          .eq('user_id', userId)
+          .maybeSingle(),
+        client
+          .from('company_memberships')
+          .select('role, company_id, companies(code)')
+          .eq('user_id', userId)
+          .eq('active', true)
+          .limit(1)
+          .maybeSingle(),
+      ])
+
+      if (!active) return
+      const profile = profileResult.data
+      const membership = membershipResult.data
+      const relatedCompany = membership
+        ? Array.isArray(membership.companies)
+          ? membership.companies[0]
+          : membership.companies
+        : null
+      const companyCode = relatedCompany?.code
+
+      if (profileResult.error || membershipResult.error || !membership || !companyCode) {
+        setUser(null)
+        setCompany(null)
+        return
+      }
+
+      const loadedUser: AuthUser = {
+        id: userId,
+        name: profile?.display_name || sessionEmail?.split('@')[0] || 'Usuário',
+        email: profile?.email || sessionEmail || '',
+        role: membership.role,
+        company: companyCode,
+        companyId: membership.company_id,
+      }
+      setUser(loadedUser)
+      setCompany(companyCode)
+      setAuthModalOpen(false)
+    }
 
     // Verifica sessão atual
     client.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        // Busca perfil e membership oficial via RLS
-        client
-          .from('profiles')
-          .select('id, name, email, company_memberships(role, company)')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data, error }) => {
-            if (!error && data) {
-              const membership = Array.isArray(data.company_memberships)
-                ? data.company_memberships[0]
-                : data.company_memberships
-              if (membership) {
-                const loadedUser: AuthUser = {
-                  id: data.id,
-                  name: data.name || session.user.email?.split('@')[0] || 'Usuário',
-                  email: data.email || session.user.email || '',
-                  role: membership.role,
-                  company: membership.company,
-                }
-                setUser(loadedUser)
-                setCompany(membership.company)
-              }
-            }
-          })
+        void loadSessionUser(session.user.id, session.user.email)
       }
     })
 
     const {
       data: { subscription },
     } = client.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
+      if (session?.user) {
+        void loadSessionUser(session.user.id, session.user.email)
+      } else {
         setUser(null)
         setCompany(null)
       }
     })
 
     return () => {
+      active = false
       subscription.unsubscribe()
     }
   }, [])
@@ -513,20 +538,24 @@ function Dashboard({
       return
     }
 
-    // 3. Com backend e sessão, realiza consulta real protegida por RLS
+    // 3. Com backend e sessão, solicita a consulta síncrona ao relay protegido.
     setRefreshing(true)
     setSyncStatusMessage(null)
 
     try {
-      const { error } = await supabase.from('tracking_events').select('id').limit(1)
+      const { data, error } = await supabase.functions.invoke('tracking-refresh', {
+        body: { companyId: user.companyId },
+      })
 
       if (error) {
-        setSyncStatusMessage(`Erro ao consultar backend: ${error.message}`)
+        setSyncStatusMessage(`Atualização não executada: ${error.message}`)
+      } else if (!data?.ok) {
+        setSyncStatusMessage(data?.error || 'Atualização não confirmada pelo backend.')
       } else {
         // Timestamp e cooldown ocorrem SOMENTE após resposta real bem-sucedida
         setLastRefreshedAt(new Date())
         setCooldownRemaining(TRACKING_POLICY.manualCooldownSeconds)
-        setSyncStatusMessage('Consulta ao backend concluída com sucesso.')
+        setSyncStatusMessage('Atualização de rastreamento confirmada pelo backend.')
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Falha na conexão com o backend'
@@ -1134,6 +1163,8 @@ function NewImportModal({
   user: AuthUser
 }) {
   const [containerCode, setContainerCode] = useState('')
+  const [internalReference, setInternalReference] = useState('')
+  const [importerName, setImporterName] = useState(company)
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -1142,6 +1173,9 @@ function NewImportModal({
     if (!isValidIso6346(containerCode)) {
       return setMessage('Informe um contêiner válido no padrão ISO 6346.')
     }
+    if (!internalReference.trim() || !importerName.trim()) {
+      return setMessage('Informe a referência interna e o importador.')
+    }
 
     if (!hasSupabaseConfig || !supabase) {
       return setMessage('Backend não configurado — nenhum dado foi gravado.')
@@ -1149,11 +1183,11 @@ function NewImportModal({
 
     setSaving(true)
     try {
-      // Salva respeitando RLS associado ao auth.uid() e company
-      const { error } = await supabase.from('imports').insert({
-        container_code: containerCode,
-        company: company,
-        created_by: user.id,
+      const { error } = await supabase.rpc('create_import_with_container', {
+        p_company_id: user.companyId,
+        p_internal_reference: internalReference.trim(),
+        p_importer_name: importerName.trim(),
+        p_container_number: normalizeContainerCode(containerCode),
       })
 
       if (error) {
@@ -1187,6 +1221,33 @@ function NewImportModal({
         </p>
         <form onSubmit={submit}>
           <label>
+            Referência interna
+            <input
+              value={internalReference}
+              onChange={(event) => {
+                setInternalReference(event.target.value)
+                setMessage('')
+              }}
+              placeholder="IMP-2026-0001"
+              maxLength={120}
+              autoFocus
+              required
+            />
+          </label>
+          <label>
+            Importador
+            <input
+              value={importerName}
+              onChange={(event) => {
+                setImporterName(event.target.value)
+                setMessage('')
+              }}
+              placeholder="Razão social do importador"
+              maxLength={200}
+              required
+            />
+          </label>
+          <label>
             Número do contêiner
             <input
               value={containerCode}
@@ -1196,7 +1257,6 @@ function NewImportModal({
               }}
               placeholder="CSQU3054383"
               maxLength={11}
-              autoFocus
             />
             <small>Formato ISO 6346 com dígito verificador.</small>
           </label>
